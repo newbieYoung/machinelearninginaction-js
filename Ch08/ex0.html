@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>简单线性回归示例</title>
+    <title>简单线性回归梯度下降示例</title>
 </head>
 <body>
 <input type="file" id="files" name="files" multiple />
@@ -58,10 +58,11 @@
                     renderLine(InitParams);
 
                     //梯度下降
-                    for(var j=0;j<1000;j++){
+                    for(var j=0;j<200;j++){
                         (function(index){
                             setTimeout(function(){
                                 InitParams = iterator(InitParams,result,func);
+                                console.log(InitParams);
                                 renderLine(InitParams);
                             },100*(index+1))
                         })(j);
