@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>数据图表</title>
+</head>
+<body>
+<input type="file" id="files" name="files" multiple />
+<div id="container" style="width: 600px;height:400px;"></div>
+<script src="http://cdn.hcharts.cn/highcharts/highcharts.js"></script>
+<script>
+    window.onload = function () {
+        // 图表
+        var chart;
+        var options = {
+            chart: {
+                type: 'scatter'
+            },
+            title: {
+                text: 'ex0.txt'
+            },
+            xAxis: {},
+            yAxis: {},
+            series: [{
+                name: '',
+                color: 'rgba(223, 83, 83, .5)',
+                data: []
+            }]
+        };
+
+        var $files = document.querySelector('#files');
+        $files.addEventListener('change',handleFileSelect,false);
+
+        function handleFileSelect(evt){
+            var files = evt.target.files;
+            var data = [];
+            if(files.length>0){
+                var file = files[0];
+                var reader = new FileReader();
+                reader.onload = function () {
+                    data = [];
+                    var str = reader.result;
+                    var arr = str.split(/[\s\n]/g);
+                    for(var i=0;i<arr.length;i = i+3){
+                        data.push([parseFloat(arr[i+1]),parseFloat(arr[i+2])]);
+                    }
+                    renderData(data);
+                };
+                reader.readAsText(file);
+            }
+            renderData(data);
+        }
+
+        //在图表中显示数据
+        function renderData(data){
+            if(!chart){//图表不存在则先初始化
+                chart = Highcharts.chart('container', options);
+            }
+            chart.series[0].setData(data);
+        }
+    }
+
+</script>
+</body>
+</html>
