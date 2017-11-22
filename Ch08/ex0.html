@@ -50,24 +50,25 @@
 
                     for(var i=0;i<arr.length;i = i+3){
                         data.push([arr[i+1],arr[i+2]]);//整理图表所需数据
-                        result.push([arr[i],arr[i+1],arr[i+2]]);
+                        if(arr[i]&&arr[i+1]&&arr[i+2]){//去掉不合法的数据
+                            result.push([arr[i],arr[i+1],arr[i+2]]);
+                        }
                     }
                     renderPoint(data);
                     renderLine(InitParams);
 
                     //梯度下降
-//                    for(var j=0;j<20;j++){
-//                        (function(index){
-//                            setTimeout(function(){
-//                                InitParams = iterator(InitParams,result,f);
-//                                //console.log(InitParams);
-//                                renderLine(InitParams);
-//                            },1000*(index+1))
-//                        })(j);
-//                    }
+                    for(var j=0;j<100;j++){
+                        (function(index){
+                            setTimeout(function(){
+                                InitParams = iterator(InitParams,result,func);
+                                renderLine(InitParams);
+                            },100*(index+1))
+                        })(j);
+                    }
 
                     for(var j=0;j<2000;j++){
-                        InitParams = iterator(InitParams,result,f);
+                        InitParams = iterator(InitParams,result,func);
                     }
                     renderLine(InitParams);
                 };
@@ -89,29 +90,29 @@
             if(!chart){//图表不存在则先初始化
                 chart = Highcharts.chart('container', options);
             }
-            chart.series[1].setData([[0,f(params.w1,params.w2,0)],[1,f(params.w1,params.w2,1)]]);
+            chart.series[1].setData([[0,func(params.w1,params.w2,0)],[1,func(params.w1,params.w2,1)]]);
         }
 
         //线性模型
-        function f(w1,w2,x){
+        function func(w1,w2,x){
             return w1+w2*x;
         }
         //初始化参数
         var InitParams = {
-            w1:1,
+            w1:5,
             w2:1,
-            v:0.00001//学习速度
+            v:0.01//学习速度
         };
 
         //梯度下降
-        function iterator(params,arr,f){
+        function iterator(params,arr,func){
             var next = {
                 w1:params.w1,
                 w2:params.w2,
                 v:params.v
             };
-            next.w1 = params.w1 - params.v*sum(0,params,arr,f);
-            next.w2 = params.w2 - params.v*sum(1,params,arr,f);
+            next.w1 = params.w1 - params.v*sum(0,params,arr,func);
+            next.w2 = params.w2 - params.v*sum(1,params,arr,func);
             return next;
         }
 
@@ -119,14 +120,9 @@
             var total = 0;
             for(var i=0;i<arr.length;i++){
                 var item = arr[i];
-                if(item[0]&&item[1]&&item[2]){
-                    total += f(params.w1,params.w2,item[1])*item[index]-item[2];
-                }
+                total += func(params.w1,params.w2,item[1])*item[index]-item[2];
             }
-//            if(index==0){
-//                console.log('----');
-//                console.log(total);
-//            }
+            total = total/arr.length;
             return total;
         }
     }
