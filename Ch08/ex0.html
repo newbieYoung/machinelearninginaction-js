@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>简单线性回归示例</title>
+</head>
+<body>
+<input type="file" id="files" name="files" multiple />
+<div id="container" style="width: 600px;height:400px;"></div>
+<script src="http://cdn.hcharts.cn/highcharts/highcharts.js"></script>
+<script>
+    window.onload = function () {
+        // 图表
+        var chart;
+        var options = {
+            title: {
+                text: 'ex0.txt'
+            },
+            xAxis: {},
+            yAxis: {},
+            series: [{
+                type:'scatter',
+                name: '数据',
+                data: []
+            },{
+                type:'line',
+                name: '线性回归线'
+            }]
+        };
+
+        var $files = document.querySelector('#files');
+        $files.addEventListener('change',handleFileSelect,false);
+
+        function handleFileSelect(evt){
+            var files = evt.target.files;
+            var data = [];
+            if(files.length>0){
+                var file = files[0];
+                var reader = new FileReader();
+                reader.onload = function () {
+                    data = [];
+                    var str = reader.result;
+                    var arr = str.split(/[\s\n]/g);
+                    for(var i=0;i<arr.length;i++){
+                        arr[i] = parseFloat(arr[i]);//转换为浮点数
+                    }
+                    console.log(arr.length);
+
+                    var result = [];
+
+                    for(var i=0;i<arr.length;i = i+3){
+                        data.push([arr[i+1],arr[i+2]]);//整理图表所需数据
+                        result.push([arr[i],arr[i+1],arr[i+2]]);
+                    }
+                    renderPoint(data);
+                    renderLine(InitParams);
+
+                    //梯度下降
+//                    for(var j=0;j<20;j++){
+//                        (function(index){
+//                            setTimeout(function(){
+//                                InitParams = iterator(InitParams,result,f);
+//                                //console.log(InitParams);
+//                                renderLine(InitParams);
+//                            },1000*(index+1))
+//                        })(j);
+//                    }
+
+                    for(var j=0;j<2000;j++){
+                        InitParams = iterator(InitParams,result,f);
+                    }
+                    renderLine(InitParams);
+                };
+                reader.readAsText(file);
+            }
+            renderPoint(data);
+        }
+
+        //渲染散点图数据
+        function renderPoint(data){
+            if(!chart){//图表不存在则先初始化
+                chart = Highcharts.chart('container', options);
+            }
+            chart.series[0].setData(data);
+        }
+
+        //渲染线性回归方程
+        function renderLine(params){
+            if(!chart){//图表不存在则先初始化
+                chart = Highcharts.chart('container', options);
+            }
+            chart.series[1].setData([[0,f(params.w1,params.w2,0)],[1,f(params.w1,params.w2,1)]]);
+        }
+
+        //线性模型
+        function f(w1,w2,x){
+            return w1+w2*x;
+        }
+        //初始化参数
+        var InitParams = {
+            w1:1,
+            w2:1,
+            v:0.00001//学习速度
+        };
+
+        //梯度下降
+        function iterator(params,arr,f){
+            var next = {
+                w1:params.w1,
+                w2:params.w2,
+                v:params.v
+            };
+            next.w1 = params.w1 - params.v*sum(0,params,arr,f);
+            next.w2 = params.w2 - params.v*sum(1,params,arr,f);
+            return next;
+        }
+
+        function sum(index,params,arr,f){
+            var total = 0;
+            for(var i=0;i<arr.length;i++){
+                var item = arr[i];
+                if(item[0]&&item[1]&&item[2]){
+                    total += f(params.w1,params.w2,item[1])*item[index]-item[2];
+                }
+            }
+//            if(index==0){
+//                console.log('----');
+//                console.log(total);
+//            }
+            return total;
+        }
+    }
+
+</script>
+</body>
+</html>
