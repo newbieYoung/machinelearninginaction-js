@@ -33,11 +33,14 @@
 
         function handleFileSelect(evt){
             var files = evt.target.files;
-            var data = [];
+            var data = [];//散点图表数据
+            var process = [];//拟合过渡数据
             if(files.length>0){
                 var file = files[0];
                 var reader = new FileReader();
                 reader.onload = function () {
+
+                    //整理数据
                     data = [];
                     var str = reader.result;
                     var arr = str.split(/[\s\n]/g);
@@ -45,27 +48,50 @@
                         arr[i] = parseFloat(arr[i]);//转换为浮点数
                     }
                     console.log(arr.length);
-
-                    var result = [];
-
+                    var result = [];//散点模型数据
                     for(var i=0;i<arr.length;i = i+3){
-                        data.push([arr[i+1],arr[i+2]]);//整理图表所需数据
+                        data.push([arr[i+1],arr[i+2]]);
                         if(arr[i]&&arr[i+1]&&arr[i+2]){//去掉不合法的数据
                             result.push([arr[i],arr[i+1],arr[i+2]]);
                         }
                     }
+
+                    //绘制散点图
                     renderPoint(data);
-                    renderLine(InitParams);
+                    process.push(InitParams);
 
                     //梯度下降
-                    for(var j=0;j<200;j++){
+                    lastCost = cost(InitParams,result,func);
+                    var no = 0;
+                    do{
+                        if(currentCost){
+                            lastCost = currentCost;
+                        }
+                        InitParams = iterator(InitParams,result,func);
+                        currentCost = cost(InitParams,result,func);
+
+                        //console.log('----');
+                        //console.log(InitParams);
+                        //console.log(currentCost);
+                        //console.log(lastCost);
+                        //console.log(Math.abs(currentCost-lastCost));
+                        process.push(InitParams);
+                    }while(Math.abs(currentCost-lastCost)>0.001)
+
+                    console.log(process.length);
+
+                    //梯度下降过程可视化
+                    for(var i=0;i<process.length;i++){
                         (function(index){
                             setTimeout(function(){
-                                InitParams = iterator(InitParams,result,func);
-                                console.log(InitParams);
-                                renderLine(InitParams);
-                            },100*(index+1))
-                        })(j);
+                                renderLine(process[index]);
+                                console.log('-- '+index+' --');
+                                console.log(process[index]);
+                                if(index==process.length-1){
+                                    console.log('-- end --');
+                                }
+                            },200*index)
+                        })(i);
                     }
                 };
                 reader.readAsText(file);
@@ -97,18 +123,20 @@
         var InitParams = {
             w1:5,
             w2:5,
-            v:0.01//学习速度
+            v:1//学习速度
         };
+        var lastCost;
+        var currentCost;
 
-        //梯度下降
-        function iterator(params,arr,func){
+                //梯度下降
+        function iterator(params,arr,f){
             var next = {
                 w1:params.w1,
                 w2:params.w2,
                 v:params.v
             };
-            next.w1 = params.w1 - params.v*sum(0,params,arr,func);
-            next.w2 = params.w2 - params.v*sum(1,params,arr,func);
+            next.w1 = params.w1 - params.v*sum(0,params,arr,f);
+            next.w2 = params.w2 - params.v*sum(1,params,arr,f);
             return next;
         }
 
@@ -116,9 +144,19 @@
             var total = 0;
             for(var i=0;i<arr.length;i++){
                 var item = arr[i];
-                total += func(params.w1,params.w2,item[1])*item[index]-item[2];
+                total += (f(params.w1,params.w2,item[1])-item[2])*item[index];
             }
             total = total/arr.length;
+            return total;
+        }
+
+        //损失函数
+        function cost(params,arr,f){
+            var total = 0;
+            for(var i=0;i<arr.length;i++){
+                var item = arr[i];
+                total += Math.pow(f(params.w1,params.w2,item[1])-item[2],2);
+            }
             return total;
         }
     }
