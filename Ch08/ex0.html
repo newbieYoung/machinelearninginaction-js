@@ -69,7 +69,11 @@
                     if(currentCost){
                         lastCost = currentCost;
                     }
-                    InitParams = batchGradientDescent(InitParams,result,func);
+
+                    //InitParams = batchGradientDescent(InitParams,result,func);
+                    //InitParams = randomGradientDescent(InitParams,result,func);
+                    InitParams = minGradientDescent(InitParams,result,func);
+
                     currentCost = cost(InitParams,result,func);
 
                     //console.log('----');
@@ -159,6 +163,55 @@
                 total += (f(params,item)-item[item.length-1])*item[index];
             }
             total = total/arr.length;
+            return total;
+        }
+
+        /**
+         * 随机梯度下降
+         * @param params
+         * @param arr
+         * @param f
+         */
+        function randomGradientDescent(params,arr,f){
+            var next = params.slice();
+            for(var i=0;i<next.length-1;i++){
+                next[i] = params[i] - params[params.length-1]*randomItem(i,params,arr,f);
+            }
+            return next;
+        }
+        function randomItem(index,params,arr,f){
+            var item = arr[parseInt(Math.random()*arr.length)];//随机取一个样本
+            var total = (f(params,item)-item[item.length-1])*item[index];
+            return total;
+        }
+
+        /**
+         * 小批量梯度下降
+         * @param params 模型参数数组
+         * @param arr 样本数据
+         * @param f 模型函数
+         */
+        function minGradientDescent(params,arr,f){
+            var next = params.slice();
+            for(var i=0;i<next.length-1;i++){
+                next[i] = params[i] - params[params.length-1]*minSum(i,params,arr,f);
+            }
+            return next;
+        }
+        function minSum(index,params,arr,f){
+            var start = parseInt(Math.random()*arr.length);
+            var minNum = 10;//小批量数据集合长度
+            var end = start+minNum;
+            if(end>arr.length-1){//向后取，如果不够就算了
+                end = arr.length-1;
+            }
+            var minArr = arr.slice(start,end);
+            var total = 0;
+            for(var i=0;i<minArr.length;i++){
+                var item = minArr[i];
+                total += (f(params,item)-item[item.length-1])*item[index];
+            }
+            total = total/minArr.length;
             return total;
         }
 
