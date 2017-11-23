@@ -69,7 +69,7 @@
                     if(currentCost){
                         lastCost = currentCost;
                     }
-                    InitParams = iterator(InitParams,result,func);
+                    InitParams = batchGradientDescent(InitParams,result,func);
                     currentCost = cost(InitParams,result,func);
 
                     //console.log('----');
@@ -77,8 +77,10 @@
                     //console.log(currentCost);
                     //console.log(lastCost);
                     //console.log(Math.abs(currentCost-lastCost));
+
                     process.push(InitParams);
-                }while(Math.abs(currentCost-lastCost)>0.001)
+                    no++;
+                }while(Math.abs(currentCost-lastCost)>0.001&&no<=maxLoopNum)
 
                 console.log(process.length);
 
@@ -112,39 +114,49 @@
             if(!chart){//图表不存在则先初始化
                 chart = Highcharts.chart('container', options);
             }
-            chart.series[1].setData([[0,func(params.w1,params.w2,0)],[1,func(params.w1,params.w2,1)]]);
+            chart.series[1].setData([[0,func(params,[1,0,null])],[1,func(params,[1,1,null])]]);
         }
 
-        //线性模型
-        function func(w1,w2,x){
-            return w1+w2*x;
+        /**
+         * 线性模型
+         * @param params 模型参数
+         * @param item 因变量 [x0,x1,x2....y]
+         */
+        function func(params,item){
+            var sum = 0;
+            for(var i=0;i<item.length-1;i++){
+                sum += params[i]*item[i];
+            }
+            return sum;
         }
-        //初始化参数
-        var InitParams = {
-            w1:5,
-            w2:5,
-            v:1//学习速度
-        };
+
+        /**
+         * 初始化模型参数 [p0,p1,p2...v]
+         * @returns
+         */
+        var InitParams = [5,5,1];
         var lastCost;
         var currentCost;
+        var maxLoopNum = 1000;
 
-                //梯度下降
-        function iterator(params,arr,f){
-            var next = {
-                w1:params.w1,
-                w2:params.w2,
-                v:params.v
-            };
-            next.w1 = params.w1 - params.v*sum(0,params,arr,f);
-            next.w2 = params.w2 - params.v*sum(1,params,arr,f);
+        /**
+         * 批量梯度下降
+         * @param params 模型参数数组
+         * @param arr 样本数据
+         * @param f 模型函数
+         */
+        function batchGradientDescent(params,arr,f){
+            var next = params.slice();
+            for(var i=0;i<next.length-1;i++){
+                next[i] = params[i] - params[params.length-1]*batchSum(i,params,arr,f);
+            }
             return next;
         }
-
-        function sum(index,params,arr,f){
+        function batchSum(index,params,arr,f){
             var total = 0;
             for(var i=0;i<arr.length;i++){
                 var item = arr[i];
-                total += (f(params.w1,params.w2,item[1])-item[2])*item[index];
+                total += (f(params,item)-item[item.length-1])*item[index];
             }
             total = total/arr.length;
             return total;
@@ -155,7 +167,7 @@
             var total = 0;
             for(var i=0;i<arr.length;i++){
                 var item = arr[i];
-                total += Math.pow(f(params.w1,params.w2,item[1])-item[2],2);
+                total += Math.pow(f(params,item)-item[item.length-1],2);
             }
             return total;
         }
