@@ -70,9 +70,9 @@
                         lastCost = currentCost;
                     }
 
-                    //InitParams = batchGradientDescent(InitParams,result,func);
+                    InitParams = batchGradientDescent(InitParams,result,func);
                     //InitParams = randomGradientDescent(InitParams,result,func);
-                    InitParams = minGradientDescent(InitParams,result,func);
+                    //InitParams = minGradientDescent(InitParams,result,func);
 
                     currentCost = cost(InitParams,result,func);
 
