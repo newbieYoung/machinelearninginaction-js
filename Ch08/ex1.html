@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>局部加权线性回归</title>
+</head>
+<body>
+    <div id="container" style="width: 600px;height:400px;"></div>
+    <script src="../lib/highcharts.js"></script>
+    <script>
+        window.onload = function(){
+            // 图表
+            var chart;
+            var options = {
+                title: {
+                    text: 'ex0.txt'
+                },
+                xAxis: {},
+                yAxis: {},
+                series: [{
+                    type:'scatter',
+                    name: '数据',
+                    data: []
+                },{
+                    type:'line',
+                    name: '局部加权线性回归线'
+                }]
+            };
+
+            //fetch通过url获取文件
+            fetch('./ex0.txt')
+                .then(function(res){
+                    return res.blob();
+                })
+                .then(function(blob){
+                    handleData(blob);
+                });
+
+            function handleData(blob){
+                var reader = new FileReader();
+                reader.onload = function () {
+                    //整理数据
+                    var data = [];//散点图表数据
+                    var process = [];//拟合过渡数据
+
+                    var str = reader.result;
+                    var arr = str.split(/[\s\n]/g);
+                    for(var i=0;i<arr.length;i++){
+                        arr[i] = parseFloat(arr[i]);//转换为浮点数
+                    }
+                    console.log(arr.length);
+                    var result = [];//散点模型数据
+                    for(var i=0;i<arr.length;i = i+3){
+                        data.push([arr[i+1],arr[i+2]]);
+                        if(arr[i]&&arr[i+1]&&arr[i+2]){//去掉不合法的数据
+                            result.push([arr[i],arr[i+1],arr[i+2]]);
+                        }
+                    }
+
+                    //绘制散点图
+                    renderPoint(data);
+                };
+                reader.readAsText(blob);
+            }
+
+            //渲染散点图数据
+            function renderPoint(data){
+                if(!chart){//图表不存在则先初始化
+                    chart = Highcharts.chart('container', options);
+                }
+                chart.series[0].setData(data);
+            }
+        }
+    </script>
+</body>
+</html>
