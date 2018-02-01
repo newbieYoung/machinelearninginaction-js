@@ -57,6 +57,7 @@
                         result.push([arr[i],arr[i+1],arr[i+2]]);
                     }
                 }
+                console.log(result[0]);//[x0,x1...y]
 
                 //绘制散点图
                 renderPoint(data);
@@ -65,6 +66,7 @@
                 //梯度下降
                 lastCost = cost(InitParams,result,func);
                 var no = 0;
+                var start = new Date().getTime();
                 do{
                     if(currentCost){
                         lastCost = currentCost;
@@ -85,7 +87,9 @@
                     process.push(InitParams);
                     no++;
                 }while(Math.abs(currentCost-lastCost)>0.001&&no<=maxLoopNum)
+                var end = new Date().getTime();
 
+                console.log('time:'+(end-start));
                 console.log(process.length);
                 console.log('R2:'+getR2(InitParams,result,func));
 
@@ -122,18 +126,7 @@
             chart.series[1].setData([[0,func(params,[1,0,null])],[1,func(params,[1,1,null])]]);
         }
 
-        /**
-         * 线性模型
-         * @param params 模型参数
-         * @param item 因变量 [x0,x1,x2....y]
-         */
-        function func(params,item){
-            var sum = 0;
-            for(var i=0;i<item.length-1;i++){
-                sum += params[i]*item[i];
-            }
-            return sum;
-        }
+        /* 虽然示例数据为一元线性回归，但以下代码均考虑了多元线性情况 */
 
         /**
          * 初始化模型参数 [p0,p1,p2...v]
@@ -145,13 +138,26 @@
         var maxLoopNum = 1000;
 
         /**
+         * 线性模型
+         * @param params 模型参数 [p0,p1,p2...v]
+         * @param item 因变量 [x0,x1,x2....y]
+         */
+        function func(params,item){
+            var sum = 0;
+            for(var i=0;i<item.length-1;i++){
+                sum += params[i]*item[i];
+            }
+            return sum;
+        }
+
+        /**
          * 批量梯度下降
          * @param params 模型参数数组
          * @param arr 样本数据
          * @param f 模型函数
          */
         function batchGradientDescent(params,arr,f){
-            var next = params.slice();
+            var next = params.slice();//复制参数
             for(var i=0;i<next.length-1;i++){
                 next[i] = params[i] - params[params.length-1]*batchSum(i,params,arr,f);
             }
@@ -216,7 +222,13 @@
             return total;
         }
 
-        //损失函数
+        /**
+         * 损失函数
+         * @param params
+         * @param arr [x0,x1...y]
+         * @param f
+         * @returns {number}
+         */
         function cost(params,arr,f){
             var total = 0;
             for(var i=0;i<arr.length;i++){
