@@ -49,7 +49,7 @@
                 for(var i=0;i<arr.length;i++){
                     arr[i] = parseFloat(arr[i]);//转换为浮点数
                 }
-                console.log(arr.length);
+                console.log('dataLen:'+arr.length);
                 var result = [];//散点模型数据
                 for(var i=0;i<arr.length;i = i+3){
                     data.push([arr[i+1],arr[i+2]]);
@@ -89,8 +89,8 @@
                 }while(Math.abs(currentCost-lastCost)>0.001&&no<=maxLoopNum)
                 var end = new Date().getTime();
 
-                console.log('time:'+(end-start));
-                console.log(process.length);
+                console.log('times:'+(end-start));
+                console.log('processLen:'+process.length);
                 console.log('R2:'+getR2(InitParams,result,func));
 
                 //梯度下降过程可视化
@@ -126,7 +126,7 @@
             chart.series[1].setData([[0,func(params,[1,0,null])],[1,func(params,[1,1,null])]]);
         }
 
-        /* 虽然示例数据为一元线性回归，但以下代码均考虑了多元线性情况 */
+        /* 虽然示例数据为一元线性回归，但以下代码均考虑了多元线性回归情况 */
 
         /**
          * 初始化模型参数 [p0,p1,p2...v]
@@ -144,7 +144,7 @@
          */
         function func(params,item){
             var sum = 0;
-            for(var i=0;i<item.length-1;i++){
+            for(var i=0;i<params.length-1;i++){
                 sum += params[i]*item[i];
             }
             return sum;

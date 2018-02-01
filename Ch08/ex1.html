@@ -19,11 +19,14 @@
                 yAxis: {},
                 series: [{
                     type:'scatter',
-                    name: '数据',
+                    name: '原始数据',
+                    color:'red',
                     data: []
                 },{
-                    type:'line',
-                    name: '局部加权线性回归线'
+                    type:'scatter',
+                    name: '局部线性回归预测数据',
+                    color:'black',
+                    data: []
                 }]
             };
 
@@ -41,14 +44,12 @@
                 reader.onload = function () {
                     //整理数据
                     var data = [];//散点图表数据
-                    var process = [];//拟合过渡数据
-
                     var str = reader.result;
                     var arr = str.split(/[\s\n]/g);
                     for(var i=0;i<arr.length;i++){
                         arr[i] = parseFloat(arr[i]);//转换为浮点数
                     }
-                    console.log(arr.length);
+                    console.log('dataLength:'+arr.length);
                     var result = [];//散点模型数据
                     for(var i=0;i<arr.length;i = i+3){
                         data.push([arr[i+1],arr[i+2]]);
@@ -57,18 +58,135 @@
                         }
                     }
 
-                    //绘制散点图
-                    renderPoint(data);
+                    renderPoint(0,data);//绘制原始数据散点图
+
+                    var allStart = new Date().getTime();
+                    var predictPoints = [];//预测值
+                    for(var i=0;i<result.length;i++){
+                        predictPoints.push(getPredictyY(result,result[i]));
+                    }
+                    var allEnd = new Date().getTime();//局部线性回归开始时间
+
+                    renderPoint(1,predictPoints);//绘制预测数据散点图
+
+                    //console.log('predictPoints:'+predictPoints);
+                    console.log('overTimes:'+overTimes);
+                    console.log('allTimes:'+(allEnd-allStart));
                 };
                 reader.readAsText(blob);
             }
 
+            //获得局部加权预测值
+            function getPredictyY(result,curArr){
+                var currentCost;
+                /**
+                 * 直接使用上一次的预测参数，在一元线性回归中，如果数据被排序了，应该会有带来一定的性能提升。
+                 */
+                var lastCost = cost(InitParams,result,func,curArr);
+                var no = 0;
+                var start = new Date().getTime();
+                do{
+                    if(currentCost){
+                        lastCost = currentCost;
+                    }
+                    InitParams = batchGradientDescent(InitParams,result,func,curArr);
+                    currentCost = cost(InitParams,result,func,curArr);
+                    no++;
+                }while(Math.abs(currentCost-lastCost)>0.001&&no<=maxLoopNum)
+                if(no>=maxLoopNum){
+                    overTimes++;
+                }
+                return [curArr[1],func(InitParams,curArr)];
+            }
+
             //渲染散点图数据
-            function renderPoint(data){
+            function renderPoint(index,data){
                 if(!chart){//图表不存在则先初始化
                     chart = Highcharts.chart('container', options);
                 }
-                chart.series[0].setData(data);
+                chart.series[index].setData(data);
+            }
+
+            /* 虽然示例数据为一元线性回归，但以下代码均考虑了多元线性情况 */
+
+            /**
+             * 初始化模型参数 [p0,p1,p2...v]
+             * @returns
+             */
+            var InitParams = [10,-5,1];
+            var k = 0.01;//波长参数
+            var maxLoopNum = 1000;
+            var overTimes = 0;//达到最大循环次数
+
+            /**
+             * 线性模型
+             * @param params 模型参数 [p0,p1,p2...v]
+             * @param item 因变量 [x0,x1,x2....y]
+             */
+            function func(params,item){
+                var sum = 0;
+                for(var i=0;i<params.length-1;i++){
+                    sum += params[i]*item[i];
+                }
+                return sum;
+            }
+
+            /**
+             * 批量梯度下降
+             * @param params 模型参数数组
+             * @param arr 样本数据
+             * @param f 模型函数
+             * @param curArr 局部加权预测位置 [xt0,xt1...y]
+             */
+            function batchGradientDescent(params,arr,f,curArr){
+                var next = params.slice();//复制参数
+                for(var i=0;i<next.length-1;i++){
+                    next[i] = params[i] - params[params.length-1]*batchSum(i,params,arr,f,curArr);
+                }
+                return next;
+            }
+            function batchSum(index,params,arr,f,curArr){
+                var total = 0;
+                for(var i=0;i<arr.length;i++){
+                    var item = arr[i];
+                    var xArr = item.slice(0,item.length-1);
+                    total += (f(params,item)-item[item.length-1])*item[index]*getWeight(xArr,curArr);
+                }
+                total = total/arr.length;
+                return total;
+            }
+
+            /**
+             * 获取权重
+             * @param xArr [xi0、xi1...xin]
+             * @param curArr [xt0、xt1...xtn,y]
+             * @returns {number}
+             */
+            function getWeight(xArr,curArr){
+                var len = 0;
+                var weight = 1;
+                for(var i=0;i<xArr.length;i++){
+                    len += Math.pow(xArr[i]-curArr[i],2);
+                }
+                weight = Math.exp(-len/(2*Math.pow(k,2)));
+                return weight;
+            }
+
+            /**
+             * 损失函数
+             * @param params
+             * @param arr [x0,x1...y]
+             * @param f
+             * @returns {number}
+             */
+            function cost(params,arr,f,curArr){
+                var total = 0;
+                for(var i=0;i<arr.length;i++){
+                    var item = arr[i];
+                    var xArr = item.slice(0,item.length-1);
+                    total += Math.pow(f(params,item)-item[item.length-1],2)*getWeight(xArr,curArr);
+                }
+                return total;
             }
         }
     </script>
