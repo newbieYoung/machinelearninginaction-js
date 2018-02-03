@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>简单线性回归梯度下降示例</title>
+    <title>简单线性回归梯度下降</title>
 </head>
 <body>
 <div id="container" style="width: 600px;height:400px;"></div>
@@ -238,7 +238,7 @@
             return total;
         }
 
-        //获得相关系数
+        //获得决定系数
         function getR2(params,arr,f){
             var average = 0;//平均值
             var totalY = 0;
@@ -253,7 +253,7 @@
                 averageCost += Math.pow((average-item[item.length-1]),2);
             }
 
-            var lineCost = cost(params,arr,f);
+            var lineCost = cost(params,arr,f);//这里可以重新计算也可以直接使用梯度下降过程中的计算结果
 
             return (1-lineCost/averageCost);
         }
