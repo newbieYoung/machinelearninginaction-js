@@ -92,7 +92,7 @@
                     InitParams = batchGradientDescent(InitParams,result,func,curArr);
                     currentCost = cost(InitParams,result,func,curArr);
                     no++;
-                }while(Math.abs(currentCost-lastCost)>0.001&&no<=maxLoopNum)
+                }while(Math.abs(currentCost-lastCost)>minError&&no<=maxLoopNum)
                 if(no>=maxLoopNum){
                     overTimes++;
                 }
@@ -115,8 +115,9 @@
              */
             var InitParams = [10,-5,1];
             var k = 0.01;//波长参数
-            var maxLoopNum = 1000;
+            var maxLoopNum = 2000;
             var overTimes = 0;//达到最大循环次数
+            var minError = 0.000001;
 
             /**
              * 线性模型

@@ -64,7 +64,8 @@
                 process.push(InitParams);
 
                 //梯度下降
-                lastCost = cost(InitParams,result,func);
+                var currentCost;
+                var lastCost = cost(InitParams,result,func);
                 var no = 0;
                 var start = new Date().getTime();
                 do{
@@ -86,7 +87,7 @@
 
                     process.push(InitParams);
                     no++;
-                }while(Math.abs(currentCost-lastCost)>0.001&&no<=maxLoopNum)
+                }while(Math.abs(currentCost-lastCost)>minError&&no<=maxLoopNum)
                 var end = new Date().getTime();
 
                 console.log('times:'+(end-start));
@@ -133,9 +134,8 @@
          * @returns
          */
         var InitParams = [10,-5,1];
-        var lastCost;
-        var currentCost;
         var maxLoopNum = 1000;
+        var minError = 0.000001;
 
         /**
          * 线性模型
