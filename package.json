@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@tensorflow/tfjs": "^0.6.1",
     "deeplearn": "^0.5.1"
   },
   "devDependencies": {},
