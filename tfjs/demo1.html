@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>多项式回归</title>
+</head>
+<body>
+    <script src="../node_modules/@tensorflow/tfjs/dist/tf.js"></script>
+    <script>
+        window.onload = function(){
+
+            //构造数据
+            const p = [4,3,2,1];
+            const x_data = [];
+            const y_data = [];
+            for(let i=0;i<100;i++){
+                var x = Math.random();
+                var y = p[0]*Math.pow(x,3)+p[1]*Math.pow(x,2)+p[2]*x+p[3];
+                x_data.push(x);
+                y_data.push(y);
+            }
+            let xData = tf.tensor1d(x_data);
+            let yData = tf.tensor1d(y_data);
+
+            //多项式模型
+            let a = tf.variable(tf.scalar(Math.random()));
+            let b = tf.variable(tf.scalar(Math.random()));
+            let c = tf.variable(tf.scalar(Math.random()));
+            let d = tf.variable(tf.scalar(Math.random()));
+            function predict(x) {
+                // y = a * x ^ 3 + b * x ^ 2 + c * x + d
+                return tf.tidy(() => {
+                    return a.mul(x.pow(tf.scalar(3))) // a * x^3
+                            .add(b.mul(x.square())) // + b * x^2
+                            .add(c.mul(x)) // + c * x
+                            .add(d);// + d
+                });
+            }
+
+            //损失函数
+            function loss(predictions, labels) {
+                let meanSquareError = predictions.sub(labels).square().mean();
+                //console.log(meanSquareError.print());
+                return meanSquareError;
+            }
+
+            //训练速度以及优化器
+            const learningRate = 0.1;
+            const optimizer = tf.train.sgd(learningRate);
+
+            //训练
+            function train(xs, ys, numIterations = 100) {
+                for (let iter = 0; iter < numIterations; iter++) {
+                    optimizer.minimize(() => {
+                        let predsYs = predict(xs);
+                        console.log('-----');
+                        a.print();
+                        b.print();
+                        c.print();
+                        d.print();
+                        return loss(predsYs, ys);
+                    });
+                }
+            }
+
+            train(xData,yData,100);
+        }
+    </script>
+</body>
+</html>
