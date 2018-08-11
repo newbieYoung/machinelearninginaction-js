@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>K近邻算法手写数字识别</title>
+</head>
+<body>
+    <script>
+        window.onload = function(){
+
+            //整理数据
+            var no = 0;//数字
+            var num = 0;//个数
+            var data = [];
+            var loadTag = false;
+
+            function load(){
+                var path = './digits/'+no+'_'+num+'.txt';
+                console.log(path);
+                fetch(path)//fetch通过url获取文件
+                .then(function(res) {
+                    loadTag = res.ok;//加载结果标识
+                    return res.blob();
+                })
+                .then(function(blob){
+                    if(loadTag){
+                        data.push(blob);
+                        num++;
+                        load();
+                    }else{
+                        no++;//数字递增
+                        num = 0;
+                        if(no<=9){//10以下继续加载
+                            load();
+                        }else{
+                            console.log(data);
+                            console.log('load end');
+                        }
+                    }
+                });
+            }
+            load();
+        }
+    </script>
+</body>
+</html>
