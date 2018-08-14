@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>K近邻算法手写数字识别</title>
+    <style>
+        body{
+            margin:0;
+            padding:0;
+            background-color:gray;
+        }
+    </style>
 </head>
 <body>
+    <canvas id="signature" width="320" height="320"></canvas>
+    <div>
+        <button id="clear">清空</button>
+        <button id="recoganise">识别</button>
+    </div>
+    <script src="../node_modules/signature_pad/dist/signature_pad.js"></script>
     <script>
         window.onload = function(){
 
@@ -33,13 +46,64 @@
                         if(no<=9){//10以下继续加载
                             load();
                         }else{
-                            console.log(data);
+                            //console.log(data);
                             console.log('load end');
+
+                            //解析二进制
+
                         }
                     }
                 });
             }
             load();
+
+            //数据输入
+            var input = [];
+            var $signature = document.querySelector('#signature');
+            var signaturePad = new SignaturePad($signature, {
+                minWidth: 10,
+                maxWidth: 20,
+                penColor: "rgb(0, 0, 0)",
+                backgroundColor: 'rgb(255, 255, 255)'
+            });
+            var $clearBtn = document.querySelector('#clear');//清空
+            $clearBtn.addEventListener('click',function(){
+                signaturePad.clear();
+            })
+            var $recoganise = document.querySelector('#recoganise');//识别
+            $recoganise.addEventListener('click',function(){
+                var size = {
+                    width:32,
+                    height:32
+                }
+                var $small = document.createElement('canvas');
+                $small.width = size.width;
+                $small.height = size.height;
+                var context = $small.getContext('2d');
+                context.drawImage($signature,0,0,size.width,size.height);
+                var imageData = context.getImageData(0,0,size.width,size.height);
+                for(var i=0;i<imageData.data.length;i=i+4){
+                    var r = imageData.data[i];
+                    var g = imageData.data[i+1];
+                    var b = imageData.data[i+2];
+                    var a = imageData.data[i+3];
+                    if(r==g&&g==b&&b==a&&a==255){
+                        input.push(0);
+                    }else{
+                        input.push(1);
+                    }
+                }
+
+                //可视化检测
+                for(var i=0;i<32;i++){
+                    var line = '';
+                    for(var j=0;j<32;j++){
+                        line += input[i*32+j];
+                    }
+                    console.log(line);
+                }
+
+            })
         }
     </script>
 </body>
