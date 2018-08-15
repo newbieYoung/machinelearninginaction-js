@@ -17,19 +17,34 @@
         <button id="clear">清空</button>
         <button id="recoganise">识别</button>
     </div>
+    <pre id="output"></pre>
     <script src="../node_modules/signature_pad/dist/signature_pad.js"></script>
     <script>
         window.onload = function(){
 
+            //数据是否准备完成
+            function arrayIsFinished(array){
+                var result = true;
+                for(var i=0;i<array.length;i++){
+                    if(array[i]==null||array[i].length<=0){
+                        result = false;
+                        break;
+                    }
+                }
+                return result;
+            }
+
             //整理数据
             var no = 0;//数字
             var num = 0;//个数
-            var data = [];
             var loadTag = false;
+            var data = [];//二进制数据
+            var array = [];//数组数据
+            var results = [];
 
             function load(){
                 var path = './digits/'+no+'_'+num+'.txt';
-                console.log(path);
+                //console.log(path);
                 fetch(path)//fetch通过url获取文件
                 .then(function(res) {
                     loadTag = res.ok;//加载结果标识
@@ -38,6 +53,7 @@
                 .then(function(blob){
                     if(loadTag){
                         data.push(blob);
+                        results.push(no);
                         num++;
                         load();
                     }else{
@@ -50,7 +66,28 @@
                             console.log('load end');
 
                             //解析二进制
+                            for(var i=0;i<data.length;i++){
+                                (function(index){
+                                    array[index] = [];
+                                    var reader = new FileReader();
+                                    reader.onload = function(){
+                                        for(var j=0;j<reader.result.length;j++){
+                                            var char = reader.result[j];
+                                            var number = parseInt(char);
+                                            if(number>=0&&number<=9){
+                                                array[index].push(number);
+                                            }
+                                        }
 
+                                        //全部解析完成
+                                        //if(arrayIsFinished(array)){
+                                        //    console.log(array);
+                                        //    console.log(result);
+                                        //}
+                                    }
+                                    reader.readAsText(data[index]);
+                                })(i)
+                            }
                         }
                     }
                 });
@@ -58,6 +95,7 @@
             load();
 
             //数据输入
+            var $output = document.querySelector('#output');
             var input = [];
             var $signature = document.querySelector('#signature');
             var signaturePad = new SignaturePad($signature, {
@@ -69,6 +107,7 @@
             var $clearBtn = document.querySelector('#clear');//清空
             $clearBtn.addEventListener('click',function(){
                 signaturePad.clear();
+                input = [];
             })
             var $recoganise = document.querySelector('#recoganise');//识别
             $recoganise.addEventListener('click',function(){
@@ -95,15 +134,69 @@
                 }
 
                 //可视化检测
+                var html = '';
                 for(var i=0;i<32;i++){
                     var line = '';
                     for(var j=0;j<32;j++){
                         line += input[i*32+j];
                     }
-                    console.log(line);
+                    html += line+'\n';
+                }
+                $output.innerHTML = html;
+
+                var number = knn(input,array,results,3);
+
+                /**
+                 * 样本太少，识别率较低
+                 */
+                console.log('您输入的数字是：'+number);
+            })
+
+            //k近邻算法
+            function knn(input,data,results,k){
+                var lens = [];
+                for(var i=0;i<data.length;i++){
+                    var item = data[i];
+                    var len = 0;
+                    for(var j=0;j<item.length;j++){
+                        len += Math.pow(item[j]-input[j],2);
+                    }
+                    lens.push({
+                        index:i,
+                        len:len
+                    });
+
+                }
+                lens.sort(function(a,b){//按距离从小到大排序
+                    if(a.len>b.len){
+                        return 1;
+                    }
+                    if(a.len<b.len){
+                        return -1;
+                    }
+                    return 0;
+                });
+
+                var counts = [0,0,0,0,0,0,0,0,0,0];//从0到9计算统计
+
+                var list = lens.slice(0,k);
+                for(var i=0;i<list.length;i++){
+                    counts[results[list[i].index]]++;
+                }
+                console.log(counts);
+
+                //选择最大的那个
+                var max = 0;
+                var no = 0;
+                for(var i=0;i<counts.length;i++){
+                    if(counts[i]>max){
+                        max = counts[i];
+                        no = i;
+                    }
                 }
 
-            })
+                return no;
+            }
         }
     </script>
 </body>
