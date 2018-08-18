@@ -17,33 +17,21 @@
         <button id="clear">清空</button>
         <button id="recoganise">识别</button>
     </div>
-    <pre id="output"></pre>
+    <canvas width="32" height="32" id="output"></canvas>
     <script src="../node_modules/signature_pad/dist/signature_pad.js"></script>
     <script>
         window.onload = function(){
-
-            //数据是否准备完成
-            function arrayIsFinished(array){
-                var result = true;
-                for(var i=0;i<array.length;i++){
-                    if(array[i]==null||array[i].length<=0){
-                        result = false;
-                        break;
-                    }
-                }
-                return result;
-            }
 
             //整理数据
             var no = 0;//数字
             var num = 0;//个数
             var loadTag = false;
             var data = [];//二进制数据
-            var array = [];//数组数据
+            var array = [];//指纹数据
             var results = [];
 
             function load(){
-                var path = './digits/'+no+'_'+num+'.txt';
+                var path = './imgs/'+no+'_'+num+'.png';
                 //console.log(path);
                 fetch(path)//fetch通过url获取文件
                 .then(function(res) {
@@ -68,24 +56,29 @@
                             //解析二进制
                             for(var i=0;i<data.length;i++){
                                 (function(index){
-                                    array[index] = [];
                                     var reader = new FileReader();
                                     reader.onload = function(){
-                                        for(var j=0;j<reader.result.length;j++){
-                                            var char = reader.result[j];
-                                            var number = parseInt(char);
-                                            if(number>=0&&number<=9){
-                                                array[index].push(number);
+
+                                        var size = {
+                                            width:32,
+                                            height:32
+                                        };
+                                        var img = new Image();
+                                        img.src = reader.result;
+                                        img.onload = function(){
+                                            var canvas = document.createElement('canvas');
+                                            canvas.width = size.width;
+                                            canvas.height = size.height;
+                                            var ctx = canvas.getContext('2d');
+                                            ctx.drawImage(img,0,0,size.width,size.height);
+                                            array[index] = pHash(canvas);
+
+                                            if(index==data.length-1){
+                                                console.log('parse end');
                                             }
                                         }
-
-                                        //全部解析完成
-                                        //if(arrayIsFinished(array)){
-                                        //    console.log(array);
-                                        //    console.log(result);
-                                        //}
                                     }
-                                    reader.readAsText(data[index]);
+                                    reader.readAsDataURL(data[index]);
                                 })(i)
                             }
                         }
@@ -95,7 +88,6 @@
             load();
 
             //数据输入
-            var $output = document.querySelector('#output');
             var input = [];
             var $signature = document.querySelector('#signature');
             var signaturePad = new SignaturePad($signature, {
@@ -110,61 +102,25 @@
                 input = [];
             })
             var $recoganise = document.querySelector('#recoganise');//识别
+            var $output = document.querySelector('#output');
             $recoganise.addEventListener('click',function(){
-                var size = {
-                    width:32,
-                    height:32
-                }
-                var $small = document.createElement('canvas');
-                $small.width = size.width;
-                $small.height = size.height;
-                var context = $small.getContext('2d');
-                context.drawImage($signature,0,0,size.width,size.height);
-                var imageData = context.getImageData(0,0,size.width,size.height);
-                for(var i=0;i<imageData.data.length;i=i+4){
-                    var r = imageData.data[i];
-                    var g = imageData.data[i+1];
-                    var b = imageData.data[i+2];
-                    var a = imageData.data[i+3];
-                    if(r==g&&g==b&&b==a&&a==255){
-                        input.push(0);
-                    }else{
-                        input.push(1);
-                    }
-                }
 
-                //可视化检测
-                var html = '';
-                for(var i=0;i<32;i++){
-                    var line = '';
-                    for(var j=0;j<32;j++){
-                        line += input[i*32+j];
-                    }
-                    html += line+'\n';
-                }
-                $output.innerHTML = html;
+                var oCtx = $output.getContext('2d');
+                oCtx.drawImage($signature,0,0,$output.width,$output.height);
 
-                var number = knn(input,array,results,3);
-
-                /**
-                 * 样本太少，识别率较低
-                 */
-                console.log('您输入的数字是：'+number);
-                alert('您输入的数字是：'+number);
+                var hash = pHash($signature);
+                var number = knn(hash,array,results,3);
+                console.log(number);
             })
 
             //k近邻算法
             function knn(input,data,results,k){
                 var lens = [];
                 for(var i=0;i<data.length;i++){
-                    var item = data[i];
-                    var len = 0;
-                    for(var j=0;j<item.length;j++){
-                        len += Math.pow(item[j]-input[j],2);
-                    }
+                    var distance = hamming(input,data[i]);
                     lens.push({
                         index:i,
-                        len:len
+                        len:distance
                     });
 
                 }
@@ -197,6 +153,92 @@
                 }
 
                 return no;
+            }
+
+            /**
+             * 感知哈希算法
+             * 针对当前素材，第一步可省略
+             * @param canvas
+             */
+            function pHash(canvas){
+                //1、缩小图片尺寸为32*32；
+                var size = {
+                    width:32,
+                    height:32
+                }
+                var scanvas = document.createElement('canvas');
+                scanvas.width = size.width;
+                scanvas.height = size.height;
+                var stext = scanvas.getContext('2d');
+                stext.drawImage(canvas,0,0,size.width,size.height);
+
+                //2、获取灰度数值
+                var grayArray = [];
+                var sImgData = stext.getImageData(0,0,size.width,size.height);
+                var sdata = sImgData.data;
+                for(var i=0;i<sdata.length;i=i+4){
+                    var r = sdata[i];
+                    var g = sdata[i+1];
+                    var b = sdata[i+2];
+
+                    var grayValue = r*0.299+g*0.587+b*0.114;
+
+                    grayArray.push(grayValue);
+                }
+
+                //3、计算DCT
+                var dct = naiveDct(grayArray);
+
+                //4、缩小DCT，保留左上角的8*8矩阵
+                var partArr = [];
+                for(var i=0;i<8;i++){
+                    for(var j=0;j<8;j++){
+                        partArr.push(dct[32*i+j]);
+                    }
+                }
+
+                //5、计算平均值
+                var sum = 0;
+                for(var i=0;i<partArr.length;i++){
+                    sum += partArr[i]
+                }
+                var average = sum/partArr.length;
+
+                //计算hash值
+                var hash = [];
+                for(var i=0;i<partArr.length;i++){
+                    if(partArr[i]>average){
+                        hash.push(1);
+                    }else{
+                        hash.push(0);
+                    }
+                }
+
+                return hash;
+            }
+
+            //汉明距离
+            function hamming(input,target){
+                var distance = 0;
+                for(var i=0;i<input.length;i++){
+                    if(input[i]!=target[i]){
+                        distance++;
+                    }
+                }
+                return distance;
+            }
+
+            //离散余旋变换
+            function naiveDct(vector){
+                var result = [];
+                var factor = Math.PI / vector.length;
+                for (var i = 0; i < vector.length; i++) {
+                    var sum = 0;
+                    for (var j = 0; j < vector.length; j++)
+                        sum += vector[j] * Math.cos((j + 0.5) * i * factor);
+                    result.push(sum);
+                }
+                return result;
             }
         }
     </script>
