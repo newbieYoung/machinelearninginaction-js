@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试离散余弦变换</title>
+</head>
+<body>
+    <canvas id="test" width="128" height="128"></canvas>
+    <canvas id="gray" width="128" height="128"></canvas>
+    <canvas id="dct"></canvas>
+    <script>
+        window.onload = function(){
+            var size = {
+                width:128,
+                height:128
+            }
+            var img = new Image();
+            img.src = '../imgs/lena.jpg';
+            img.onload = function(){
+                var $test = document.querySelector('#test');
+                var tctx = $test.getContext('2d');
+                tctx.drawImage(img,0,0,size.width,size.height);
+
+                //灰度
+                var grayArr = [];
+                var imgData = tctx.getImageData(0,0,size.width,size.height);
+                var data = imgData.data;
+                for(var i=0;i<data.length;i=i+4){
+                    var r = data[i];
+                    var g = data[i+1];
+                    var b = data[i+2];
+
+                    var grayValue = r*0.299+g*0.587+b*0.114;
+                    grayArr.push(grayValue);
+
+                    data[i] = grayValue;
+                    data[i+1] = grayValue;
+                    data[i+2] = grayValue;
+                }
+                var $gray = document.querySelector('#gray');
+                var gctx = $gray.getContext('2d');
+                gctx.putImageData(imgData,0,0);
+
+                //离散余弦变换
+                var dct = naiveDct(grayArr);
+
+                //离散值转换为图像
+                var min = 0;
+                var max = 0;
+                for(var i=0;i<dct.length;i++){
+                    if(dct[i]<min){
+                        min = dct[i];
+                    }
+                    if(dct[i]>max){
+                        max = dct[i];
+                    }
+                }
+                var len = max - min;
+                var rgb = [];
+                for(var i=0;i<dct.length;i++){
+                    var color = 255-parseInt((dct[i]-min)/len*255);
+                    rgb.push(color);
+                }
+                var $dct = document.querySelector('#dct');
+                $dct.width = size.width;
+                $dct.height = size.height;
+                var dctx = $dct.getContext('2d');
+                var dImageData = dctx.getImageData(0,0,size.width,size.height);
+                for(var i=0;i<dImageData.data.length;i=i+4){
+                    dImageData.data[i] = rgb[parseInt(i/4)];
+                    dImageData.data[i+1] = dImageData.data[i];
+                    dImageData.data[i+2] = dImageData.data[i];
+                    dImageData.data[i+3] = 255;
+                }
+                dctx.putImageData(dImageData,0,0);
+            }
+
+            //离散余旋变换
+            function naiveDct(vector){
+                var result = [];
+                var factor = Math.PI / vector.length;
+                for (var i = 0; i < vector.length; i++) {
+                    var sum = 0;
+                    for (var j = 0; j < vector.length; j++)
+                        sum += vector[j] * Math.cos((j + 0.5) * i * factor);
+                    result.push(sum);
+                }
+                return result;
+            }
+        }
+    </script>
+</body>
+</html>

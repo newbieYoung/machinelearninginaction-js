@@ -31,7 +31,7 @@
             var results = [];
 
             function load(){
-                var path = './imgs/'+no+'_'+num+'.png';
+                var path = './imgs/'+no+'_'+num+'.png';//本来是文本文件，所以才用fetch
                 //console.log(path);
                 fetch(path)//fetch通过url获取文件
                 .then(function(res) {
@@ -207,7 +207,7 @@
                 //计算hash值
                 var hash = [];
                 for(var i=0;i<partArr.length;i++){
-                    if(partArr[i]>average){
+                    if(partArr[i]>=average){
                         hash.push(1);
                     }else{
                         hash.push(0);
