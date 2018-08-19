@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "@tensorflow/tfjs": "^0.6.1",
-    "signature_pad": "^3.0.0-beta.3"
+    "@tensorflow/tfjs": "^0.6.1"
   },
   "devDependencies": {},
   "scripts": {
