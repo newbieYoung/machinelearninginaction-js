@@ -5,17 +5,17 @@
     <title>测试离散余弦变换</title>
 </head>
 <body>
-    <canvas id="test" width="128" height="128"></canvas>
-    <canvas id="gray" width="128" height="128"></canvas>
+    <canvas id="test" width="256" height="256"></canvas>
+    <canvas id="gray" width="256" height="256"></canvas>
     <canvas id="dct"></canvas>
     <script>
         window.onload = function(){
             var size = {
-                width:128,
-                height:128
+                width:256,
+                height:256
             }
             var img = new Image();
-            img.src = '../imgs/lena.jpg';
+            img.src = '../imgs/sky.JPG';
             img.onload = function(){
                 var $test = document.querySelector('#test');
                 var tctx = $test.getContext('2d');
@@ -42,7 +42,7 @@
                 gctx.putImageData(imgData,0,0);
 
                 //离散余弦变换
-                var dct = naiveDct(grayArr);
+                var dct = applyDCT2(256,grayArr);
 
                 //离散值转换为图像
                 var min = 0;
@@ -68,14 +68,13 @@
                 var dImageData = dctx.getImageData(0,0,size.width,size.height);
                 for(var i=0;i<dImageData.data.length;i=i+4){
                     dImageData.data[i] = rgb[parseInt(i/4)];
-                    dImageData.data[i+1] = dImageData.data[i];
-                    dImageData.data[i+2] = dImageData.data[i];
+                    dImageData.data[i+1] = rgb[parseInt(i/4)];
+                    dImageData.data[i+2] = rgb[parseInt(i/4)];
                     dImageData.data[i+3] = 255;
                 }
                 dctx.putImageData(dImageData,0,0);
             }
 
-            //离散余旋变换
             function naiveDct(vector){
                 var result = [];
                 var factor = Math.PI / vector.length;
@@ -86,6 +85,39 @@
                     result.push(sum);
                 }
                 return result;
+            }
+
+            function applyDCT2(N, f){
+                // initialize coefficients
+                var c = new Float64Array(N);
+                for(var i = 1; i < N; i++) c[i] = 1;
+                c[0] = 1 / Math.sqrt(2);
+
+                // output goes here
+                var F = new Float64Array(N * N);
+
+                // construct a lookup table, because it's O(n^4)
+                var entries = (2 * N) * (N - 1);
+                var COS = new Float64Array(entries);
+                for(var i = 0; i < entries; i++)
+                    COS[i] = Math.cos(i / (2 * N) * Math.PI);
+
+                // the core loop inside a loop inside a loop...
+                for(var u = 0; u < N; u++){
+                    for(var v = 0; v < N; v++){
+                        var sum = 0;
+                        for(var i = 0; i < N; i++){
+                            for(var j = 0; j < N; j++){
+                                sum += COS[(2 * i + 1) * u]
+                                        * COS[(2 * j + 1) * v]
+                                        * f[N * i + j];
+                            }
+                        }
+                        sum *= ((c[u] * c[v])/4);
+                        F[N * u + v] = sum;
+                    }
+                }
+                return F
             }
         }
     </script>

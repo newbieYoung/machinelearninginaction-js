@@ -135,8 +135,8 @@
                 });
 
                 var counts = [0,0,0,0,0,0,0,0,0,0];//从0到9计算统计
-
                 var list = lens.slice(0,k);
+                console.log(list);
                 for(var i=0;i<list.length;i++){
                     counts[results[list[i].index]]++;
                 }
@@ -187,7 +187,8 @@
                 }
 
                 //3、计算DCT
-                var dct = naiveDct(grayArray);
+                var dct = applyDCT2(32,grayArray);
+                //var dct = naiveDct(grayArray);
 
                 //4、缩小DCT，保留左上角的8*8矩阵
                 var partArr = [];
@@ -239,6 +240,40 @@
                     result.push(sum);
                 }
                 return result;
+            }
+
+            //离散余旋变换-改进版
+            function applyDCT2(N, f){
+                // initialize coefficients
+                var c = new Float64Array(N);
+                for(var i = 1; i < N; i++) c[i] = 1;
+                c[0] = 1 / Math.sqrt(2);
+
+                // output goes here
+                var F = new Float64Array(N * N);
+
+                // construct a lookup table, because it's O(n^4)
+                var entries = (2 * N) * (N - 1);
+                var COS = new Float64Array(entries);
+                for(var i = 0; i < entries; i++)
+                    COS[i] = Math.cos(i / (2 * N) * Math.PI);
+
+                // the core loop inside a loop inside a loop...
+                for(var u = 0; u < N; u++){
+                    for(var v = 0; v < N; v++){
+                        var sum = 0;
+                        for(var i = 0; i < N; i++){
+                            for(var j = 0; j < N; j++){
+                                sum += COS[(2 * i + 1) * u]
+                                        * COS[(2 * j + 1) * v]
+                                        * f[N * i + j];
+                            }
+                        }
+                        sum *= ((c[u] * c[v])/4);
+                        F[N * u + v] = sum;
+                    }
+                }
+                return F
             }
         }
     </script>
