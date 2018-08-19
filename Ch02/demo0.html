@@ -116,13 +116,18 @@
             //k近邻算法
             function knn(input,data,results,k){
                 var lens = [];
+                /**
+                 * 在phash算法中汉明距离
+                 * 0-4表示两个图片基本类似；
+                 * 4-10表示两个图片差别不大；
+                 * 10以上表示图片有较大差异
+                 */
                 for(var i=0;i<data.length;i++){
                     var distance = hamming(input,data[i]);
                     lens.push({
                         index:i,
                         len:distance
                     });
-
                 }
                 lens.sort(function(a,b){//按距离从小到大排序
                     if(a.len>b.len){
